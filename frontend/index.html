@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Student Management</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="app-header">
+        <div>
+          <h1>Student Management System</h1>
+          <p>
+            A full-stack application to add, view, update, and delete student records with a clean and user-friendly interface.
+          </p>
+        </div>
+      </header>
+
+      <main class="container">
+        <section class="card form-card">
+          <h2>Add Student</h2>
+          <div id="message" class="message-box"></div>
+          <form id="studentForm" novalidate>
+            <div class="form-grid">
+              <input type="text" id="name" placeholder="Name" required />
+              <input
+                type="text"
+                id="rollNumber"
+                placeholder="Roll Number"
+                inputmode="numeric"
+                pattern="\d+"
+                title="Roll Number must contain digits only"
+                required
+              />
+              <input type="text" id="class" placeholder="Class" required />
+              <input
+                type="text"
+                id="section"
+                placeholder="Section / Batch"
+                required
+              />
+              <input type="email" id="email" placeholder="Email" required />
+              <div class="phone-field">
+                <select id="countryCode" required>
+                  <option value="+91">🇮🇳 +91</option>
+                  <option value="+1">🇺🇸 +1</option>
+                  <option value="+44">🇬🇧 +44</option>
+                  <option value="+61">🇦🇺 +61</option>
+                  <option value="+81">🇯🇵 +81</option>
+                  <option value="+55">🇧🇷 +55</option>
+                  <option value="+49">🇩🇪 +49</option>
+                  <option value="+33">🇫🇷 +33</option>
+                  <option value="+971">🇦🇪 +971</option>
+                  <option value="+966">🇸🇦 +966</option>
+                  <option value="+86">🇨🇳 +86</option>
+                  <option value="+7">🇷🇺 +7</option>
+                </select>
+                <input
+                  type="tel"
+                  id="phone"
+                  placeholder="1234567890"
+                  pattern="[0-9]{10}"
+                  title="Enter 10 digits only"
+                  maxlength="10"
+                  required
+                />
+              </div>
+              <input type="text" id="address" placeholder="Address" required />
+              <input
+                type="date"
+                id="dob"
+                placeholder="Date of Birth"
+                required
+              />
+            </div>
+            <button id="submitBtn" class="primary-btn" type="submit">
+              Add Student
+            </button>
+          </form>
+        </section>
+
+        <section class="card list-card">
+          <div class="list-header">
+            <h2>Students List</h2>
+            <span id="studentCount">0 students</span>
+          </div>
+          <div id="students" class="students-grid"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
