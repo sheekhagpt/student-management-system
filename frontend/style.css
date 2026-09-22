@@ -228,7 +228,14 @@ select:focus {
   line-height: 1.35;
 }
 
+.form-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
 .primary-btn,
+.cancel-btn,
 .delete-btn {
   border: none;
   border-radius: 16px;
@@ -242,7 +249,7 @@ select:focus {
 }
 
 .primary-btn {
-  width: 100%;
+  flex: 1;
   padding: 16px 18px;
   background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: #062c1f;
@@ -252,6 +259,28 @@ select:focus {
 .primary-btn:hover {
   transform: translateY(-2px);
 }
+
+.cancel-btn {
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: var(--muted);
+}
+
+.cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--text);
+  transform: translateY(-2px);
+}
+
+.student.error-state p {
+  color: #fca5a5;
+}
+
+.student.empty-state p {
+  color: var(--muted);
+}
+
 
 .list-header {
   display: flex;

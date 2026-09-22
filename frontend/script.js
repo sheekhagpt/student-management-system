@@ -1,8 +1,21 @@
-const API = "http://localhost:5000/students";
+const API = window.location.origin.includes(":5000")
+  ? "/students"
+  : "http://localhost:5000/students";
+
 let editStudentId = null;
 
 function getField(id) {
   return document.getElementById(id);
+}
+
+function escapeHTML(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 function normalizePhone(value, code) {
@@ -12,26 +25,27 @@ function normalizePhone(value, code) {
 
 function getCountryCode(phone) {
   const codes = [
+    "+971",
+    "+966",
     "+91",
-    "+1",
+    "+49",
     "+44",
     "+61",
     "+81",
     "+55",
-    "+49",
     "+33",
-    "+971",
-    "+966",
     "+86",
+    "+1",
     "+7",
   ];
   return codes.find((code) => phone.startsWith(code)) || "+91";
 }
 
 function getLocalPhone(phone, code) {
-  return phone.startsWith(code)
-    ? phone.slice(code.length)
-    : phone.replace(/\D/g, "");
+  if (phone.startsWith(code)) {
+    return phone.slice(code.length);
+  }
+  return phone.replace(/\D/g, "");
 }
 
 function getFormData() {
@@ -39,7 +53,7 @@ function getFormData() {
 
   return {
     name: getField("name").value.trim(),
-    rollNumber: getField("rollNumber").value,
+    rollNumber: Number(getField("rollNumber").value.trim()),
     class: getField("class").value.trim(),
     section: getField("section").value.trim(),
     email: getField("email").value.trim(),
@@ -60,55 +74,120 @@ function resetForm() {
     "address",
     "dob",
   ].forEach((id) => {
-    getField(id).value = "";
+    const el = getField(id);
+    if (el) el.value = "";
   });
 
-  getField("countryCode").value = "+91";
+  const countryCode = getField("countryCode");
+  if (countryCode) countryCode.value = "+91";
+
   editStudentId = null;
-  document.getElementById("submitBtn").textContent = "Add Student";
-  showMessage("");
+
+  const submitBtn = document.getElementById("submitBtn");
+  if (submitBtn) submitBtn.textContent = "Add Student";
+
+  const formHeading = document.getElementById("formHeading");
+  if (formHeading) formHeading.textContent = "Add Student";
+
+  const cancelBtn = document.getElementById("cancelBtn");
+  if (cancelBtn) cancelBtn.style.display = "none";
+}
+
+function cancelEdit() {
+  resetForm();
+  showMessage("Edit canceled.", "success");
 }
 
 function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 80;
 }
 
 function isValidPhone(phone) {
-  return /^\+91\d{10}$/.test(phone);
+  // Matches + followed by 1 to 5 country digits and exactly 10 local digits
+  return /^\+\d{1,5}\d{10}$/.test(phone);
 }
 
 function validateForm() {
   const form = getField("studentForm");
+  const nameField = getField("name");
   const rollField = getField("rollNumber");
+  const classField = getField("class");
+  const sectionField = getField("section");
   const emailField = getField("email");
   const phoneField = getField("phone");
+  const addressField = getField("address");
+  const dobField = getField("dob");
 
-  [rollField, emailField, phoneField].forEach((field) => {
+  [
+    nameField,
+    rollField,
+    classField,
+    sectionField,
+    emailField,
+    phoneField,
+    addressField,
+    dobField,
+  ].forEach((field) => {
     if (field) field.setCustomValidity("");
   });
 
-  if (
-    rollField &&
-    rollField.value.trim() &&
-    !/^\d+$/.test(rollField.value.trim())
-  ) {
-    rollField.setCustomValidity("Roll Number should contain digits only.");
+  // Name validation (2 to 50 characters, letters/spaces/dots)
+  const nameVal = nameField ? nameField.value.trim() : "";
+  if (!nameVal || nameVal.length < 2 || nameVal.length > 50) {
+    nameField.setCustomValidity("Name must be between 2 and 50 characters.");
+  } else if (!/^[a-zA-Z\s.'-]+$/.test(nameVal)) {
+    nameField.setCustomValidity("Name should contain letters only.");
   }
 
-  if (
-    emailField &&
-    emailField.value.trim() &&
-    !isValidEmail(emailField.value.trim())
-  ) {
-    emailField.setCustomValidity("Please enter a valid email address.");
+  // Roll Number validation (1 to 8 digits, positive number)
+  const rollVal = rollField ? rollField.value.trim() : "";
+  if (!rollVal) {
+    rollField.setCustomValidity("Roll Number is required.");
+  } else if (!/^[1-9][0-9]{0,7}$/.test(rollVal)) {
+    rollField.setCustomValidity("Roll Number must be a positive number from 1 to 8 digits (max: 99999999).");
   }
 
-  if (
-    phoneField &&
-    phoneField.value.trim() &&
-    !/^\d{10}$/.test(phoneField.value.trim())
-  ) {
+  // Class validation
+  const classVal = classField ? classField.value.trim() : "";
+  if (!classVal || classVal.length > 30) {
+    classField.setCustomValidity("Class must be between 1 and 30 characters.");
+  }
+
+  // Section validation
+  const sectionVal = sectionField ? sectionField.value.trim() : "";
+  if (!sectionVal || sectionVal.length > 20) {
+    sectionField.setCustomValidity("Section must be between 1 and 20 characters.");
+  }
+
+  // Email validation
+  const emailVal = emailField ? emailField.value.trim() : "";
+  if (!emailVal || !isValidEmail(emailVal)) {
+    emailField.setCustomValidity("Please enter a valid email address (max 80 characters).");
+  }
+
+  // Phone validation (exactly 10 digits)
+  const phoneVal = phoneField ? phoneField.value.trim() : "";
+  if (!phoneVal || !/^\d{10}$/.test(phoneVal)) {
     phoneField.setCustomValidity("Phone number must be exactly 10 digits.");
+  }
+
+  // Address validation
+  const addrVal = addressField ? addressField.value.trim() : "";
+  if (!addrVal || addrVal.length < 3 || addrVal.length > 150) {
+    addressField.setCustomValidity("Address must be between 3 and 150 characters.");
+  }
+
+  // DOB validation
+  const dobVal = dobField ? dobField.value : "";
+  if (!dobVal) {
+    dobField.setCustomValidity("Date of birth is required.");
+  } else {
+    const dobDate = new Date(dobVal);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (isNaN(dobDate.getTime()) || dobDate > today || dobDate < new Date("1900-01-01")) {
+      dobField.setCustomValidity("Date of birth must be a valid date between 1900 and today.");
+    }
   }
 
   if (!form.checkValidity()) {
@@ -133,46 +212,59 @@ function showMessage(text, type = "success") {
   messageBox.className = `message-box ${type}`;
 
   setTimeout(() => {
-    showMessage("");
-  }, 3000);
+    if (messageBox.textContent === text) {
+      showMessage("");
+    }
+  }, 4000);
 }
 
 async function fetchStudents() {
+  const container = document.getElementById("students");
+  const count = document.getElementById("studentCount");
+
   try {
     const res = await fetch(API);
     const data = await res.json();
 
-    const container = document.getElementById("students");
-    const count = document.getElementById("studentCount");
+    if (!res.ok || !Array.isArray(data)) {
+      const errMsg = (data && data.message) ? data.message : "Unable to load students.";
+      container.innerHTML = `<div class="student error-state"><p>⚠️ ${escapeHTML(errMsg)}</p></div>`;
+      count.textContent = "0 students";
+      return;
+    }
+
     container.innerHTML = "";
 
     if (!data.length) {
-      container.innerHTML = `<div class="student"><p>No students found yet. Add a student to get started.</p></div>`;
-    } else {
-      data.forEach((student) => {
-        container.innerHTML += `
-          <div class="student">
-            <p><b>Name:</b> ${student.name}</p>
-            <p><b>Roll:</b> ${student.rollNumber}</p>
-            <p><b>Class:</b> ${student.class}</p>
-            ${student.section ? `<p><b>Section:</b> ${student.section}</p>` : ""}
-            ${student.email ? `<p><b>Email:</b> ${student.email}</p>` : ""}
-            ${student.phone ? `<p><b>Phone:</b> ${student.phone}</p>` : ""}
-            ${student.address ? `<p><b>Address:</b> ${student.address}</p>` : ""}
-            ${student.dob ? `<p><b>DOB:</b> ${student.dob}</p>` : ""}
-            <div class="student-actions">
-              <button class="edit-btn" onclick="startEdit('${student._id}')">Edit</button>
-              <button class="delete-btn" onclick="deleteStudent('${student._id}')">Delete</button>
-            </div>
-          </div>
-        `;
-      });
+      container.innerHTML = `<div class="student empty-state"><p>No students found yet. Add a student to get started.</p></div>`;
+      count.textContent = "0 students";
+      return;
     }
+
+    data.forEach((student) => {
+      container.innerHTML += `
+        <div class="student" id="student-${student._id}">
+          <p><b>Name:</b> ${escapeHTML(student.name)}</p>
+          <p><b>Roll:</b> ${escapeHTML(student.rollNumber)}</p>
+          <p><b>Class:</b> ${escapeHTML(student.class)}</p>
+          ${student.section ? `<p><b>Section:</b> ${escapeHTML(student.section)}</p>` : ""}
+          ${student.email ? `<p><b>Email:</b> ${escapeHTML(student.email)}</p>` : ""}
+          ${student.phone ? `<p><b>Phone:</b> ${escapeHTML(student.phone)}</p>` : ""}
+          ${student.address ? `<p><b>Address:</b> ${escapeHTML(student.address)}</p>` : ""}
+          ${student.dob ? `<p><b>DOB:</b> ${escapeHTML(student.dob)}</p>` : ""}
+          <div class="student-actions">
+            <button class="edit-btn" onclick="startEdit('${student._id}')">Edit</button>
+            <button class="delete-btn" onclick="deleteStudent('${student._id}')">Delete</button>
+          </div>
+        </div>
+      `;
+    });
 
     count.textContent = `${data.length} student${data.length === 1 ? "" : "s"}`;
   } catch (error) {
-    alert("Unable to load students. Please try again.");
-    console.error(error);
+    console.error("fetchStudents error:", error);
+    container.innerHTML = `<div class="student error-state"><p>⚠️ Unable to connect to server. Please ensure the backend is running.</p></div>`;
+    count.textContent = "0 students";
   }
 }
 
@@ -181,11 +273,17 @@ async function startEdit(id) {
     const res = await fetch(`${API}/${id}`);
     const student = await res.json();
 
+    if (!res.ok) {
+      showMessage(student.message || "Failed to load student details.", "error");
+      return;
+    }
+
     getField("name").value = student.name || "";
-    getField("rollNumber").value = student.rollNumber || "";
+    getField("rollNumber").value = student.rollNumber !== undefined ? student.rollNumber : "";
     getField("class").value = student.class || "";
     getField("section").value = student.section || "";
     getField("email").value = student.email || "";
+
     const code = getCountryCode(student.phone || "+91");
     getField("countryCode").value = code;
     getField("phone").value = getLocalPhone(student.phone || "", code);
@@ -194,8 +292,20 @@ async function startEdit(id) {
 
     editStudentId = id;
     document.getElementById("submitBtn").textContent = "Update Student";
+
+    const formHeading = document.getElementById("formHeading");
+    if (formHeading) formHeading.textContent = "Edit Student";
+
+    const cancelBtn = document.getElementById("cancelBtn");
+    if (cancelBtn) cancelBtn.style.display = "inline-block";
+
+    // Scroll smoothly to form
+    const formCard = document.querySelector(".form-card");
+    if (formCard) {
+      formCard.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   } catch (error) {
-    alert("Unable to load student data for editing.");
+    showMessage("Unable to load student data for editing.", "error");
     console.error(error);
   }
 }
@@ -215,59 +325,95 @@ async function addStudent(event) {
 
     if (!isValidPhone(studentData.phone)) {
       showMessage(
-        "Please enter 10 digits. The selected country code will be saved too.",
+        "Please enter 10 digits. The selected country code will be saved automatically.",
         "error",
       );
       return;
     }
 
-    const method = editStudentId ? "PUT" : "POST";
-    const url = editStudentId ? `${API}/${editStudentId}` : API;
+    const isEditing = Boolean(editStudentId);
+    const method = isEditing ? "PUT" : "POST";
+    const url = isEditing ? `${API}/${editStudentId}` : API;
 
-    await fetch(url, {
+    const res = await fetch(url, {
       method,
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        name: studentData.name,
-        rollNumber: studentData.rollNumber,
-        class: studentData.class,
-        section: studentData.section,
-        email: studentData.email,
-        phone: studentData.phone,
-        address: studentData.address,
-        dob: studentData.dob,
-      }),
+      body: JSON.stringify(studentData),
     });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      showMessage(result.message || "Unable to save student.", "error");
+      return;
+    }
 
     resetForm();
     await fetchStudents();
     showMessage(
-      editStudentId ? "Data updated successfully." : "Data saved successfully.",
+      isEditing ? "Student updated successfully." : "Student added successfully.",
+      "success"
     );
   } catch (error) {
-    showMessage("Unable to save student. Please try again.", "error");
+    showMessage("Unable to save student. Server may be offline.", "error");
     console.error(error);
   }
 }
 
 async function deleteStudent(id) {
+  if (!confirm("Are you sure you want to delete this student record?")) {
+    return;
+  }
+
   try {
-    await fetch(`${API}/${id}`, {
+    const res = await fetch(`${API}/${id}`, {
       method: "DELETE",
     });
 
-    fetchStudents();
-    showMessage("Student deleted successfully.");
+    const result = await res.json();
+
+    if (!res.ok) {
+      showMessage(result.message || "Unable to delete student.", "error");
+      return;
+    }
+
+    // If currently editing this student, reset form
+    if (editStudentId === id) {
+      resetForm();
+    }
+
+    await fetchStudents();
+    showMessage("Student deleted successfully.", "success");
   } catch (error) {
-    showMessage("Unable to delete student. Please try again.", "error");
+    showMessage("Unable to delete student. Server may be offline.", "error");
     console.error(error);
   }
 }
 
-// AUTO LOAD
-fetchStudents();
+// Attach event listeners and live input restrictions
+const rollField = getField("rollNumber");
+if (rollField) {
+  rollField.addEventListener("input", function () {
+    // Only allow digits, max 8 digits
+    this.value = this.value.replace(/\D/g, "").slice(0, 8);
+  });
+}
+
+const phoneField = getField("phone");
+if (phoneField) {
+  phoneField.addEventListener("input", function () {
+    // Only allow digits, max 10 digits
+    this.value = this.value.replace(/\D/g, "").slice(0, 10);
+  });
+}
+
+const dobField = getField("dob");
+if (dobField) {
+  // Prevent future dates dynamically
+  dobField.max = new Date().toISOString().split("T")[0];
+}
 
 const studentForm = getField("studentForm");
 if (studentForm) {
@@ -275,3 +421,7 @@ if (studentForm) {
     addStudent(event);
   });
 }
+
+fetchStudents();
+
+
