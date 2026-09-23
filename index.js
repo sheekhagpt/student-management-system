@@ -13,8 +13,17 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve frontend static assets
-app.use(express.static(path.join(__dirname, "frontend")));
+// Serve frontend static assets (no-cache for instant local updates)
+app.use(
+  express.static(path.join(__dirname, "frontend"), {
+    etag: false,
+    maxAge: 0,
+    setHeaders: (res) => {
+      res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    },
+  })
+);
+
 
 // API Health Check
 app.get("/api/health", (req, res) => {

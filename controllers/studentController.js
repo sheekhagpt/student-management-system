@@ -1,6 +1,22 @@
 const mongoose = require("mongoose");
 const Student = require("../models/student");
 
+const validateRollNumber = (req, res) => {
+  const { rollNumber } = req.body || {};
+  const isValid =
+    (typeof rollNumber === "number" && Number.isInteger(rollNumber)) ||
+    (typeof rollNumber === "string" && /^[1-9]\d{0,7}$/.test(rollNumber));
+
+  if (!isValid || Number(rollNumber) < 1 || Number(rollNumber) > 99999999) {
+    res.status(400).json({
+      message: "Roll number must be a positive integer from 1 to 8 digits (maximum 99999999).",
+    });
+    return false;
+  }
+
+  return true;
+};
+
 // Helper to check DB connection
 const checkDB = (res) => {
   if (mongoose.connection.readyState !== 1) {
@@ -15,6 +31,7 @@ const checkDB = (res) => {
 // CREATE
 exports.createStudent = async (req, res) => {
   if (!checkDB(res)) return;
+  if (!validateRollNumber(req, res)) return;
 
   try {
     const student = await Student.create(req.body);
@@ -66,6 +83,7 @@ exports.getStudentById = async (req, res) => {
 // UPDATE
 exports.updateStudent = async (req, res) => {
   if (!checkDB(res)) return;
+  if (!validateRollNumber(req, res)) return;
 
   try {
     const student = await Student.findByIdAndUpdate(
@@ -110,4 +128,4 @@ exports.deleteStudent = async (req, res) => {
     }
     res.status(500).json({ message: error.message || "Failed to delete student." });
   }
-};
+};
